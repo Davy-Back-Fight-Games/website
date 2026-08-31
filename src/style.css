@@ -1,0 +1,458 @@
+:root {
+  color-scheme: dark;
+  font-family: "Arial Narrow", "Roboto Condensed", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #f4f1e8;
+  --muted: #b7b4aa;
+  --night: #10120f;
+  --night-soft: #181b17;
+  --acid: #d7f75b;
+  --acid-ink: #15180c;
+  --line: rgb(244 241 232 / 18%);
+  --focus: #ffe987;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--night);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 46%, rgb(215 247 91 / 9%), transparent 36rem),
+    linear-gradient(135deg, #0d100d 0%, var(--night-soft) 55%, #0b0d0b 100%);
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 39px,
+    rgb(244 241 232 / 6%) 40px
+  );
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: var(--acid);
+  text-underline-offset: 0.2em;
+}
+
+button,
+a,
+[tabindex]:not([tabindex="-1"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
+::selection {
+  color: var(--acid-ink);
+  background: var(--acid);
+}
+
+#app,
+.app-shell {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  isolation: isolate;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  place-items: center;
+  overflow: hidden;
+}
+
+.scene-shell,
+.canvas-wrap {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  touch-action: none;
+}
+
+.scene-canvas,
+.canvas-wrap canvas,
+canvas[data-handheld-scene] {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+}
+
+.brand-mark {
+  position: fixed;
+  z-index: 2;
+  top: clamp(1rem, 3vw, 2rem);
+  left: clamp(1rem, 3vw, 2rem);
+  max-width: 11rem;
+  margin: 0;
+  font-size: clamp(0.68rem, 1.25vw, 0.82rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.brand-mark span {
+  display: block;
+  color: var(--muted);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.72em;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.status,
+.loading-status,
+[role="status"] {
+  position: fixed;
+  z-index: 3;
+  top: clamp(1rem, 3vw, 2rem);
+  right: clamp(1rem, 3vw, 2rem);
+  margin: 0;
+  color: var(--muted);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status::before,
+.loading-status::before {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  background: var(--acid);
+  box-shadow: 0 0 0.8rem rgb(215 247 91 / 65%);
+  content: "";
+}
+
+.status[data-state="loading"]::before,
+.loading-status[data-state="loading"]::before {
+  animation: status-pulse 1.1s steps(2, end) infinite;
+}
+
+.help,
+.interaction-help {
+  position: fixed;
+  z-index: 2;
+  bottom: clamp(1rem, 3vw, 2rem);
+  left: 50%;
+  max-width: min(30rem, calc(100vw - 13rem));
+  margin: 0;
+  color: var(--muted);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: clamp(0.62rem, 1.4vw, 0.75rem);
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.help kbd,
+.interaction-help kbd {
+  color: var(--ink);
+  font: inherit;
+}
+
+.text-mode-toggle {
+  position: fixed;
+  z-index: 12;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  padding: 0.45rem 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.text-mode-toggle:hover,
+.text-mode-toggle[aria-expanded="true"] {
+  color: var(--acid);
+}
+
+.text-mode-panel {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  overflow-y: auto;
+  padding: clamp(4.5rem, 10vw, 8rem) max(clamp(1.25rem, 8vw, 8rem), calc((100vw - 60rem) / 2));
+  background: rgb(16 18 15 / 96%);
+  backdrop-filter: blur(16px);
+}
+
+.text-mode-panel[hidden] {
+  display: none;
+}
+
+.text-mode-panel__inner,
+.text-content {
+  width: min(100%, 60rem);
+  margin-inline: auto;
+}
+
+.text-mode-panel h1,
+.text-content h1 {
+  max-width: 12ch;
+  margin: 0 0 1.5rem;
+  font-size: clamp(2.4rem, 8vw, 6rem);
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+}
+
+.text-mode-panel h2,
+.text-content h2 {
+  margin: clamp(2rem, 6vw, 4rem) 0 0.65rem;
+  color: var(--acid);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.text-mode-panel p,
+.text-content p {
+  max-width: 52ch;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 2.1vw, 1.2rem);
+  line-height: 1.6;
+}
+
+.text-mode-panel nav ul,
+.text-content nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  list-style: none;
+}
+
+.text-mode-panel nav a,
+.text-content nav a {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+body[data-text-mode="true"] .scene-shell,
+body[data-text-mode="true"] .canvas-wrap,
+body[data-text-mode="true"] .help,
+body[data-text-mode="true"] .interaction-help {
+  visibility: hidden;
+}
+
+.semantic-controls {
+  position: fixed;
+  z-index: 20;
+  right: 1rem;
+  bottom: 1rem;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.semantic-controls:focus-within {
+  display: flex;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  gap: 0.35rem;
+  background: rgb(16 18 15 / 95%);
+  clip-path: none;
+  white-space: normal;
+}
+
+.semantic-controls button {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--night-soft);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.semantic-controls button:hover {
+  color: var(--acid-ink);
+  background: var(--acid);
+}
+
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 1rem;
+  left: 50%;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  color: var(--acid-ink);
+  background: var(--acid);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  transform: translate(-50%, calc(-100% - 2rem));
+}
+
+.skip-link:focus {
+  transform: translate(-50%, 0);
+}
+
+@keyframes status-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-mark {
+    max-width: 8rem;
+  }
+
+  .help,
+  .interaction-help {
+    right: 1rem;
+    bottom: 3.7rem;
+    left: 1rem;
+    max-width: none;
+    transform: none;
+  }
+
+  .help .desktop-only,
+  .interaction-help .desktop-only {
+    display: none;
+  }
+
+  .text-mode-toggle {
+    min-height: 44px;
+  }
+
+  .text-mode-panel {
+    align-content: start;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .brand-mark,
+  .status,
+  .loading-status {
+    top: 0.65rem;
+  }
+
+  .brand-mark {
+    left: 0.75rem;
+  }
+
+  .status,
+  .loading-status {
+    right: 0.75rem;
+  }
+
+  .help,
+  .interaction-help {
+    bottom: 0.65rem;
+  }
+
+  .text-mode-toggle {
+    right: 0.75rem;
+    bottom: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted: #e8e5dc;
+    --line: rgb(255 255 255 / 55%);
+  }
+
+  .text-mode-panel {
+    background: var(--night);
+    backdrop-filter: none;
+  }
+}
