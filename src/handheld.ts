@@ -16,6 +16,7 @@ export type HandheldControl =
 export interface HandheldSceneOptions {
   canvas: HTMLCanvasElement;
   onControl?: (control: HandheldControl) => void;
+  onContextLost?: () => void;
 }
 
 export interface HandheldScene {
@@ -160,9 +161,16 @@ function isDPadDirection(control: HandheldControl): control is DPadDirection {
 }
 
 export function createHandheld(options: HandheldSceneOptions): HandheldScene {
-  const { canvas, onControl } = options;
+  const { canvas, onControl, onContextLost } = options;
   const previousTouchAction = canvas.style.touchAction;
   canvas.style.touchAction = 'none';
+  const compactViewport = window.matchMedia('(max-width: 700px)').matches;
+
+  const handleContextLost = (event: Event): void => {
+    event.preventDefault();
+    onContextLost?.();
+  };
+  canvas.addEventListener('webglcontextlost', handleContextLost);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf4efdf);
@@ -170,7 +178,12 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
   camera.position.set(0, 0.2, 16.4);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: false,
+    powerPreference: 'high-performance',
+  });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -183,7 +196,8 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
   keyLight.position.set(-5, 8, 10);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
+  const shadowMapSize = compactViewport ? 512 : 1024;
+  keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
   keyLight.shadow.camera.left = -7;
   keyLight.shadow.camera.right = 7;
   keyLight.shadow.camera.top = 8;
@@ -442,7 +456,8 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const resize = (): void => {
     const width = Math.max(1, canvas.clientWidth);
     const height = Math.max(1, canvas.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const pixelRatioCap = compactViewport ? 1.5 : 2;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     // Contain the complete device on both axes instead of using a fixed
@@ -458,10 +473,11 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   resizeObserver.observe(canvas);
   resize();
 
-  const clock = new THREE.Clock();
-  const animate = (): void => {
+  let lastFrameTime = performance.now();
+  const animate = (frameTime = performance.now()): void => {
     if (destroyed) return;
-    dpad.update(clock.getDelta());
+    dpad.update(Math.min(Math.max((frameTime - lastFrameTime) / 1000, 0), 0.1));
+    lastFrameTime = frameTime;
     pivot.rotation.x += (-0.035 + tiltTarget.x - pivot.rotation.x) * 0.075;
     pivot.rotation.y += (tiltTarget.y - pivot.rotation.y) * 0.075;
     renderer.render(scene, camera);
@@ -482,6 +498,7 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     canvas.removeEventListener('pointerup', releasePointer);
     canvas.removeEventListener('pointercancel', releasePointer);
     canvas.removeEventListener('pointerleave', onPointerLeave);
+    canvas.removeEventListener('webglcontextlost', handleContextLost);
     canvas.style.touchAction = previousTouchAction;
     canvas.style.cursor = '';
 

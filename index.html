@@ -11,7 +11,13 @@
     <title>Davy Back Fight Games — Handheld PoC</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <main class="boot-fallback" aria-live="polite">
+        <p class="boot-fallback__eyebrow">Davy Back Fight Games</p>
+        <p class="boot-fallback__message">Loading handheld…</p>
+        <noscript>This interactive site requires JavaScript.</noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

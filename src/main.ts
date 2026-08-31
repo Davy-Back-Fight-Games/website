@@ -167,6 +167,11 @@ try {
   handheld = createHandheld({
     canvas,
     onControl: (control) => dispatchControl(control),
+    onContextLost: () => {
+      status.dataset.state = 'fallback';
+      status.textContent = '3D unavailable — text mode ready';
+      setTextMode(true, false);
+    },
   });
 
   pixelScreen = createPixelScreen({
