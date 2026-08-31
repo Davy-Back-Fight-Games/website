@@ -164,7 +164,8 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const { canvas, onControl, onContextLost } = options;
   const previousTouchAction = canvas.style.touchAction;
   canvas.style.touchAction = 'none';
-  const compactViewport = window.matchMedia('(max-width: 700px)').matches;
+  const ecosiaAndroid = /Ecosia android@/i.test(navigator.userAgent);
+  const compactViewport = window.matchMedia('(max-width: 700px)').matches || ecosiaAndroid;
 
   const handleContextLost = (event: Event): void => {
     event.preventDefault();
@@ -180,14 +181,14 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: !ecosiaAndroid,
     alpha: false,
-    powerPreference: 'high-performance',
+    powerPreference: ecosiaAndroid ? 'default' : 'high-performance',
   });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !ecosiaAndroid;
   renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const hemisphere = new THREE.HemisphereLight(0xfffae8, 0x64557c, 2.2);
@@ -195,7 +196,7 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
 
   const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
   keyLight.position.set(-5, 8, 10);
-  keyLight.castShadow = true;
+  keyLight.castShadow = !ecosiaAndroid;
   const shadowMapSize = compactViewport ? 512 : 1024;
   keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
   keyLight.shadow.camera.left = -7;
@@ -211,7 +212,7 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const backdropMaterial = new THREE.ShadowMaterial({ color: 0x6d624e, opacity: 0.15 });
   const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), backdropMaterial);
   backdrop.position.z = -2.1;
-  backdrop.receiveShadow = true;
+  backdrop.receiveShadow = !ecosiaAndroid;
   scene.add(backdrop);
 
   const pivot = new THREE.Group();
@@ -426,9 +427,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   };
 
   const onPointerDown = (event: PointerEvent): void => {
+    event.preventDefault();
     const control = controlAtEvent(event);
     if (!control) return;
-    event.preventDefault();
     activeControl = control;
     setPressed(control, true);
     canvas.setPointerCapture?.(event.pointerId);
@@ -447,17 +448,22 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     canvas.style.cursor = 'default';
   };
 
+  const preventCanvasDefault = (event: Event): void => event.preventDefault();
+
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointerup', releasePointer);
   canvas.addEventListener('pointercancel', releasePointer);
   canvas.addEventListener('pointerleave', onPointerLeave);
+  canvas.addEventListener('contextmenu', preventCanvasDefault);
+  canvas.addEventListener('dragstart', preventCanvasDefault);
+  canvas.addEventListener('selectstart', preventCanvasDefault);
 
   const resize = (): void => {
     const bounds = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(bounds.width || window.innerWidth));
     const height = Math.max(1, Math.round(bounds.height || window.innerHeight));
-    const pixelRatioCap = compactViewport ? 1.5 : 2;
+    const pixelRatioCap = ecosiaAndroid ? 1 : compactViewport ? 1.5 : 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -506,6 +512,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     canvas.removeEventListener('pointerup', releasePointer);
     canvas.removeEventListener('pointercancel', releasePointer);
     canvas.removeEventListener('pointerleave', onPointerLeave);
+    canvas.removeEventListener('contextmenu', preventCanvasDefault);
+    canvas.removeEventListener('dragstart', preventCanvasDefault);
+    canvas.removeEventListener('selectstart', preventCanvasDefault);
     canvas.removeEventListener('webglcontextlost', handleContextLost);
     canvas.style.touchAction = previousTouchAction;
     canvas.style.cursor = '';

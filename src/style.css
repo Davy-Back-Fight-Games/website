@@ -92,6 +92,10 @@ a,
   min-height: 100vh;
   min-height: 100svh;
   isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .boot-fallback {
@@ -143,6 +147,10 @@ a,
   min-width: 0;
   min-height: 0;
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .scene-canvas,
@@ -155,6 +163,12 @@ canvas[data-handheld-scene] {
   height: 100%;
   border: 0;
   outline: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .brand-mark {
@@ -270,6 +284,13 @@ canvas[data-handheld-scene] {
   padding: clamp(4.5rem, 10vw, 8rem) max(clamp(1.25rem, 8vw, 8rem), calc((100vw - 60rem) / 2));
   background: rgb(16 18 15 / 96%);
   backdrop-filter: blur(16px);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.text-mode-panel * {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .text-mode-panel[hidden] {
