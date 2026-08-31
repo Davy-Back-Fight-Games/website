@@ -454,8 +454,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   canvas.addEventListener('pointerleave', onPointerLeave);
 
   const resize = (): void => {
-    const width = Math.max(1, canvas.clientWidth);
-    const height = Math.max(1, canvas.clientHeight);
+    const bounds = canvas.getBoundingClientRect();
+    const width = Math.max(1, Math.round(bounds.width || window.innerWidth));
+    const height = Math.max(1, Math.round(bounds.height || window.innerHeight));
     const pixelRatioCap = compactViewport ? 1.5 : 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
     renderer.setSize(width, height, false);
@@ -469,9 +470,14 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     camera.updateProjectionMatrix();
   };
 
-  const resizeObserver = new ResizeObserver(resize);
-  resizeObserver.observe(canvas);
+  const resizeObserver = typeof ResizeObserver === 'undefined'
+    ? undefined
+    : new ResizeObserver(resize);
+  resizeObserver?.observe(canvas);
+  window.addEventListener('resize', resize, { passive: true });
+  window.visualViewport?.addEventListener('resize', resize, { passive: true });
   resize();
+  window.requestAnimationFrame(resize);
 
   let lastFrameTime = performance.now();
   const animate = (frameTime = performance.now()): void => {
@@ -492,7 +498,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const destroy = (): void => {
     destroyed = true;
     window.cancelAnimationFrame(animationFrame);
-    resizeObserver.disconnect();
+    resizeObserver?.disconnect();
+    window.removeEventListener('resize', resize);
+    window.visualViewport?.removeEventListener('resize', resize);
     canvas.removeEventListener('pointermove', onPointerMove);
     canvas.removeEventListener('pointerdown', onPointerDown);
     canvas.removeEventListener('pointerup', releasePointer);
