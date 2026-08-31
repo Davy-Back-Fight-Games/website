@@ -98,6 +98,11 @@ a,
   user-select: none;
 }
 
+.app-shell,
+.app-shell * {
+  -webkit-tap-highlight-color: rgb(0 0 0 / 0%) !important;
+}
+
 .boot-fallback {
   position: fixed;
   inset: 0;

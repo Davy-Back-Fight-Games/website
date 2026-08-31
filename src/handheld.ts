@@ -375,6 +375,7 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   const pointer = new THREE.Vector2();
   const tiltTarget = new THREE.Vector2();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   let hoveredControl: HandheldControl | undefined;
   let activeControl: HandheldControl | undefined;
   let animationFrame = 0;
@@ -422,8 +423,10 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
       const localY = ((event.clientY - rect.top) / rect.height) * 2 - 1;
       tiltTarget.set(THREE.MathUtils.clamp(localY * 0.055, -0.055, 0.055), THREE.MathUtils.clamp(localX * 0.085, -0.085, 0.085));
     }
-    hoveredControl = controlAtEvent(event);
-    canvas.style.cursor = hoveredControl ? 'pointer' : 'default';
+    if (hasFinePointer) {
+      hoveredControl = controlAtEvent(event);
+      canvas.style.cursor = hoveredControl ? 'pointer' : 'default';
+    }
   };
 
   const onPointerDown = (event: PointerEvent): void => {
@@ -449,6 +452,7 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   };
 
   const preventCanvasDefault = (event: Event): void => event.preventDefault();
+  const preventTouchDefault = (event: TouchEvent): void => event.preventDefault();
 
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerdown', onPointerDown);
@@ -458,6 +462,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
   canvas.addEventListener('contextmenu', preventCanvasDefault);
   canvas.addEventListener('dragstart', preventCanvasDefault);
   canvas.addEventListener('selectstart', preventCanvasDefault);
+  canvas.addEventListener('touchstart', preventTouchDefault, { passive: false });
+  canvas.addEventListener('touchmove', preventTouchDefault, { passive: false });
+  canvas.addEventListener('touchend', preventTouchDefault, { passive: false });
 
   const resize = (): void => {
     const bounds = canvas.getBoundingClientRect();
@@ -515,6 +522,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     canvas.removeEventListener('contextmenu', preventCanvasDefault);
     canvas.removeEventListener('dragstart', preventCanvasDefault);
     canvas.removeEventListener('selectstart', preventCanvasDefault);
+    canvas.removeEventListener('touchstart', preventTouchDefault);
+    canvas.removeEventListener('touchmove', preventTouchDefault);
+    canvas.removeEventListener('touchend', preventTouchDefault);
     canvas.removeEventListener('webglcontextlost', handleContextLost);
     canvas.style.touchAction = previousTouchAction;
     canvas.style.cursor = '';
