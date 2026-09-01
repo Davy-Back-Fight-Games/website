@@ -27,6 +27,8 @@ export type ScreenId = "boot" | "menu" | PageId;
 export interface PixelScreenState {
   screen: ScreenId;
   menuIndex: number;
+  crewMemberIndex: number;
+  crewScrollY: number;
   helpOpen: boolean;
   soundEnabled: boolean;
   revision: number;
@@ -59,6 +61,46 @@ const MENU: ReadonlyArray<{ label: string; page: PageId }> = [
   { label: "THE CREW", page: "crew" },
   { label: "CONTACT", page: "contact" },
 ];
+
+export const CREW_MEMBERS: ReadonlyArray<{
+  name: string;
+  role: string;
+  portrait: "captain" | "engineer" | "artist";
+  bio: readonly string[];
+}> = [
+  {
+    name: "MARA VALE",
+    role: "CREATIVE CAPTAIN",
+    portrait: "captain",
+    bio: [
+      "BUILDS STRANGE WORLDS AND WRITES TROUBLE INTO EVERY CORNER.",
+      "KEEPS PROJECTS POINTED TOWARD PLAYFUL SURPRISES, BOLD CHOICES, AND THE ROUTE NOBODY EXPECTED.",
+    ],
+  },
+  {
+    name: "IVO REEF",
+    role: "GAMEPLAY ENGINEER",
+    portrait: "engineer",
+    bio: [
+      "TURNS WILD IDEAS INTO TIGHT, RESPONSIVE SYSTEMS THAT FEEL GOOD IN YOUR HANDS.",
+      "HUNTS STUBBORN BUGS BEFORE THEY BITE, THEN TUNES EVERY JUMP, HIT, AND BUTTON PRESS.",
+    ],
+  },
+  {
+    name: "NOA FLINT",
+    role: "ART & AUDIO",
+    portrait: "artist",
+    bio: [
+      "SHAPES PIXELS, SOUND, AND QUICK MOTION INTO A STYLE WITH A SHARP SILHOUETTE.",
+      "GIVES EACH NEW WORLD ITS OWN COLOR, RHYTHM, AND VOICE—THEN ADDS ONE LAST STRANGE DETAIL.",
+    ],
+  },
+];
+
+const CREW_VIEW_TOP = 24;
+const CREW_VIEW_BOTTOM = 128;
+const CREW_VIEW_HEIGHT = CREW_VIEW_BOTTOM - CREW_VIEW_TOP;
+const CREW_SCROLL_STEP = 13;
 
 const SCREEN_COPY: Record<
   PageId,
@@ -136,6 +178,8 @@ class ScreenController implements PixelScreenController {
     this.state = {
       screen: this.bootDuration === 0 ? "menu" : "boot",
       menuIndex: 0,
+      crewMemberIndex: 0,
+      crewScrollY: 0,
       helpOpen: false,
       soundEnabled: false,
       revision: 0,
@@ -182,13 +226,11 @@ class ScreenController implements PixelScreenController {
       return;
     }
 
-    // The shoulder-to-shoulder content pages can also be browsed without
-    // repeatedly returning to the menu.
-    if (action === "left" || action === "right") {
-      const current = MENU.findIndex((item) => item.page === this.state.screen);
-      const step = action === "left" ? -1 : 1;
-      const menuIndex = wrap(current + step, MENU.length);
-      this.setState({ menuIndex, screen: MENU[menuIndex].page });
+    if (this.state.screen === "crew") {
+      if (action === "left") this.moveCrewMember(-1);
+      if (action === "right") this.moveCrewMember(1);
+      if (action === "up") this.scrollCrewProfile(-1);
+      if (action === "down") this.scrollCrewProfile(1);
     }
   }
 
@@ -238,6 +280,23 @@ class ScreenController implements PixelScreenController {
 
   private moveMenu(step: number): void {
     this.setState({ menuIndex: wrap(this.state.menuIndex + step, MENU.length) });
+  }
+
+  private moveCrewMember(step: number): void {
+    this.setState({
+      crewMemberIndex: wrap(this.state.crewMemberIndex + step, CREW_MEMBERS.length),
+      crewScrollY: 0,
+    });
+  }
+
+  private scrollCrewProfile(step: number): void {
+    const member = CREW_MEMBERS[this.state.crewMemberIndex];
+    const maxScroll = Math.max(0, crewProfileHeight(this.context, member) - CREW_VIEW_HEIGHT);
+    const crewScrollY = Math.min(
+      maxScroll,
+      Math.max(0, this.state.crewScrollY + step * CREW_SCROLL_STEP),
+    );
+    if (crewScrollY !== this.state.crewScrollY) this.setState({ crewScrollY });
   }
 
   private goHome(): void {
@@ -326,6 +385,11 @@ class ScreenController implements PixelScreenController {
   }
 
   private drawPage(page: PageId): void {
+    if (page === "crew") {
+      this.drawCrew();
+      return;
+    }
+
     this.clear();
     const ctx = this.context;
     const content = SCREEN_COPY[page];
@@ -342,7 +406,42 @@ class ScreenController implements PixelScreenController {
         color: index === 0 ? COLOR.ink : COLOR.deep,
       });
     });
-    drawFooter(ctx, "< > BROWSE", "B BACK");
+    drawFooter(ctx, "", "B BACK");
+  }
+
+  private drawCrew(): void {
+    this.clear();
+    const ctx = this.context;
+    const member = CREW_MEMBERS[this.state.crewMemberIndex];
+    const profileHeight = crewProfileHeight(ctx, member);
+    const maxScroll = Math.max(0, profileHeight - CREW_VIEW_HEIGHT);
+
+    drawHeader(ctx, this.state.soundEnabled);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, CREW_VIEW_TOP, SCREEN_WIDTH - 5, CREW_VIEW_HEIGHT);
+    ctx.clip();
+    ctx.translate(0, CREW_VIEW_TOP - this.state.crewScrollY);
+
+    text(ctx, "ROLL CALL", 10, 12, { size: 6, color: COLOR.deep });
+    text(ctx, `< ${this.state.crewMemberIndex + 1} / ${CREW_MEMBERS.length} >`, 150, 12, {
+      align: "right",
+      size: 6,
+      color: COLOR.deep,
+    });
+    text(ctx, member.name, 10, 31, { size: 11, color: COLOR.ink });
+    text(ctx, member.role, 10, 44, { size: 6, color: COLOR.deep });
+    drawCrewPortrait(ctx, 111, 19, member.portrait);
+
+    ctx.fillStyle = COLOR.ink;
+    ctx.fillRect(10, 57, 139, 2);
+    text(ctx, "PROFILE", 10, 72, { size: 6, color: COLOR.deep });
+    drawCrewBio(ctx, member);
+    ctx.restore();
+
+    drawCrewScrollbar(ctx, this.state.crewScrollY, maxScroll, profileHeight);
+    drawFooter(ctx, "<> MEMBER  ^v SCROLL", "B BACK");
   }
 
   private drawHelp(): void {
@@ -360,7 +459,7 @@ class ScreenController implements PixelScreenController {
     });
     ctx.fillStyle = COLOR.deep;
     ctx.fillRect(24, 39, 112, 2);
-    text(ctx, "D-PAD   MOVE / BROWSE", 20, 57, { size: 6, color: COLOR.ink });
+    text(ctx, "D-PAD   MOVE / READ", 20, 57, { size: 6, color: COLOR.ink });
     text(ctx, "A       OPEN / SELECT", 20, 70, { size: 6, color: COLOR.ink });
     text(ctx, "B       GO BACK", 20, 83, { size: 6, color: COLOR.ink });
     text(ctx, "START   MAIN MENU", 20, 96, { size: 6, color: COLOR.ink });
@@ -402,6 +501,139 @@ export function screenActionFromKey(key: string): ScreenAction | undefined {
     control: "start",
   };
   return mapping[normalized];
+}
+
+type CrewMember = (typeof CREW_MEMBERS)[number];
+
+interface CrewBioLine {
+  value: string;
+  y: number;
+  paragraph: number;
+}
+
+function screenFont(size: number): string {
+  return `650 ${size}px ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace`;
+}
+
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  maxWidth: number,
+  size: number,
+): string[] {
+  ctx.save();
+  ctx.font = screenFont(size);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of value.split(/\s+/)) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (current && ctx.measureText(candidate).width > maxWidth) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+
+  if (current) lines.push(current);
+  ctx.restore();
+  return lines;
+}
+
+function crewBioLayout(ctx: CanvasRenderingContext2D, member: CrewMember): {
+  lines: CrewBioLine[];
+  height: number;
+} {
+  const lines: CrewBioLine[] = [];
+  let y = 87;
+
+  member.bio.forEach((paragraph, paragraphIndex) => {
+    for (const value of wrapText(ctx, paragraph, 139, 6.5)) {
+      lines.push({ value, y, paragraph: paragraphIndex });
+      y += 10;
+    }
+    if (paragraphIndex < member.bio.length - 1) y += 5;
+  });
+
+  return { lines, height: y + 6 };
+}
+
+function crewProfileHeight(ctx: CanvasRenderingContext2D, member: CrewMember): number {
+  return crewBioLayout(ctx, member).height;
+}
+
+function drawCrewBio(ctx: CanvasRenderingContext2D, member: CrewMember): void {
+  for (const line of crewBioLayout(ctx, member).lines) {
+    text(ctx, line.value, 10, line.y, {
+      size: 6.5,
+      color: line.paragraph === 0 ? COLOR.ink : COLOR.deep,
+    });
+  }
+}
+
+function drawCrewPortrait(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  portrait: CrewMember["portrait"],
+): void {
+  ctx.fillStyle = COLOR.deep;
+  ctx.fillRect(x, y, 38, 40);
+  cutCorners(ctx, x, y, 38, 40, COLOR.paper);
+  ctx.fillStyle = COLOR.light;
+  ctx.fillRect(x + 3, y + 3, 32, 34);
+  ctx.fillStyle = COLOR.paper;
+  ctx.fillRect(x + 10, y + 10, 18, 19);
+  ctx.fillStyle = COLOR.ink;
+  ctx.fillRect(x + 8, y + 31, 22, 6);
+  ctx.fillStyle = COLOR.deep;
+  ctx.fillRect(x + 13, y + 18, 3, 3);
+  ctx.fillRect(x + 22, y + 18, 3, 3);
+  ctx.fillRect(x + 17, y + 25, 5, 2);
+
+  if (portrait === "captain") {
+    ctx.fillStyle = COLOR.ink;
+    ctx.fillRect(x + 8, y + 7, 22, 6);
+    ctx.fillRect(x + 8, y + 12, 4, 13);
+    ctx.fillStyle = COLOR.flash;
+    ctx.fillRect(x + 13, y + 8, 12, 2);
+  } else if (portrait === "engineer") {
+    ctx.fillStyle = COLOR.ink;
+    ctx.fillRect(x + 10, y + 7, 18, 5);
+    ctx.fillRect(x + 8, y + 17, 10, 6);
+    ctx.fillRect(x + 20, y + 17, 10, 6);
+    ctx.fillRect(x + 18, y + 19, 2, 2);
+    ctx.fillStyle = COLOR.paper;
+    ctx.fillRect(x + 11, y + 19, 4, 2);
+    ctx.fillRect(x + 23, y + 19, 4, 2);
+  } else {
+    ctx.fillStyle = COLOR.ink;
+    ctx.fillRect(x + 8, y + 7, 22, 5);
+    ctx.fillRect(x + 8, y + 11, 5, 17);
+    ctx.fillRect(x + 25, y + 11, 5, 10);
+    ctx.fillStyle = COLOR.flash;
+    ctx.fillRect(x + 27, y + 6, 3, 3);
+  }
+}
+
+function drawCrewScrollbar(
+  ctx: CanvasRenderingContext2D,
+  scrollY: number,
+  maxScroll: number,
+  contentHeight: number,
+): void {
+  if (maxScroll <= 0) return;
+  const trackY = CREW_VIEW_TOP + 4;
+  const trackHeight = CREW_VIEW_HEIGHT - 8;
+  const thumbHeight = Math.max(16, Math.round(trackHeight * (CREW_VIEW_HEIGHT / contentHeight)));
+  const thumbTravel = trackHeight - thumbHeight;
+  const thumbY = trackY + Math.round(thumbTravel * (scrollY / maxScroll));
+
+  ctx.fillStyle = COLOR.light;
+  ctx.fillRect(157, trackY, 2, trackHeight);
+  ctx.fillStyle = COLOR.deep;
+  ctx.fillRect(156, thumbY, 4, thumbHeight);
 }
 
 function drawHeader(ctx: CanvasRenderingContext2D, soundEnabled: boolean): void {
@@ -463,7 +695,7 @@ function text(
 ): void {
   ctx.save();
   ctx.fillStyle = options.color;
-  ctx.font = `650 ${options.size}px ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace`;
+  ctx.font = screenFont(options.size);
   ctx.textAlign = options.align ?? "left";
   ctx.textBaseline = "alphabetic";
   ctx.fillText(value, x, y);

@@ -5,6 +5,7 @@ import {
   type HandheldScene,
 } from './handheld';
 import {
+  CREW_MEMBERS,
   createPixelScreen,
   screenActionFromKey,
   type PixelScreenController,
@@ -75,7 +76,14 @@ app.innerHTML = `
         <p>Our first project is in the works. More loot soon.</p>
 
         <h2>The crew</h2>
-        <p>Names and proper introductions are coming in the next iteration.</p>
+        ${CREW_MEMBERS.map(
+          ({ name, role, bio }) => `
+            <article>
+              <h3>${name} — ${role}</h3>
+              <p>${bio.join(' ')}</p>
+            </article>
+          `,
+        ).join('')}
 
         <h2>Contact</h2>
         <p>Contact details and social links are placeholders for this proof of concept.</p>
