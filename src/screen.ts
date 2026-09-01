@@ -69,7 +69,7 @@ export const CREW_MEMBERS: ReadonlyArray<{
   bio: readonly string[];
 }> = [
   {
-    name: "MARA VALE",
+    name: "Obibobi",
     role: "CREATIVE CAPTAIN",
     portrait: "captain",
     bio: [
@@ -78,7 +78,7 @@ export const CREW_MEMBERS: ReadonlyArray<{
     ],
   },
   {
-    name: "IVO REEF",
+    name: "Toter-Keks",
     role: "GAMEPLAY ENGINEER",
     portrait: "engineer",
     bio: [
@@ -87,12 +87,12 @@ export const CREW_MEMBERS: ReadonlyArray<{
     ],
   },
   {
-    name: "NOA FLINT",
-    role: "ART & AUDIO",
+    name: "Guntmar 123",
+    role: "STORY WRITER",
     portrait: "artist",
     bio: [
-      "SHAPES PIXELS, SOUND, AND QUICK MOTION INTO A STYLE WITH A SHARP SILHOUETTE.",
-      "GIVES EACH NEW WORLD ITS OWN COLOR, RHYTHM, AND VOICE—THEN ADDS ONE LAST STRANGE DETAIL.",
+      "WRITES CHARACTERS, QUESTS, AND STRANGE TWISTS THAT PULL PLAYERS INTO EACH WORLD.",
+      "SHAPES EVERY SCENE WITH HUMOR, HEART, AND JUST ENOUGH TROUBLE TO KEEP THE STORY MOVING.",
     ],
   },
 ];
