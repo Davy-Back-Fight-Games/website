@@ -35,6 +35,7 @@ interface ControlPart {
   visual: THREE.Object3D;
   hitArea: THREE.Object3D;
   restZ: number;
+  pressDepth: number;
   releaseTimer?: number;
 }
 
@@ -315,9 +316,10 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     control: HandheldControl,
     visual: THREE.Object3D,
     hitArea: THREE.Object3D,
+    pressDepth = 0.11,
   ): void => {
     hitArea.userData.control = control;
-    controlParts.set(control, { visual, hitArea, restZ: visual.position.z });
+    controlParts.set(control, { visual, hitArea, restZ: visual.position.z, pressDepth });
     raycastTargets.push(hitArea);
     if (visual.parent !== device) device.add(visual);
     device.add(hitArea);
@@ -356,7 +358,9 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     const hit = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.48, 0.5), hitMaterial);
     hit.rotation.z = -0.18;
     hit.position.set(x, -3.37, 0.77);
-    registerControl(control, pill, hit);
+    // These controls are shallower than A/B. Keep their pressed face just above
+    // the shell instead of lowering the entire pill behind it.
+    registerControl(control, pill, hit, 0.045);
   };
   addPill('select', -0.52);
   addPill('start', 0.55);
@@ -398,7 +402,7 @@ export function createHandheld(options: HandheldSceneOptions): HandheldScene {
     }
     const part = controlParts.get(control);
     if (!part) return;
-    part.visual.position.z = part.restZ + (pressed ? -0.11 : 0);
+    part.visual.position.z = part.restZ - (pressed ? part.pressDepth : 0);
   };
 
   const flashControl = (control: HandheldControl): void => {
